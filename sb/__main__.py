@@ -331,7 +331,7 @@ async def modlogs(ctx: commands.Context, users: commands.Greedy[discord.User]):
 
         reply += f"{user.mention} has {row[0]} modlogs\n"
 
-    await paged_send(bot.get_channel(config["private_channel"]), reply)
+    await paged_send(bot.get_channel(int(config["private_channel"])), reply)
 
 
 @bot.command()
@@ -462,7 +462,7 @@ async def add_modlog(msg: discord.Message):
             "SELECT COUNT(id) FROM modlogs WHERE user=:user", {"user": user}
         )[0]
         if num_modlogs % 5 == 0:
-            logs = bot.get_channel(config["private_channel"])
+            logs = bot.get_channel(int(config["private_channel"]))
             await logs.send(
                 f"<@&{config['notify_role']}> <@{user}> has {num_modlogs} modlogs"
             )
