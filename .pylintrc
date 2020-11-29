@@ -1,0 +1,5 @@
+[MESSAGES CONTROL]
+# disable checks for:
+# missing-module-docstring: effectively all modules here just contain one class
+# bad-continuation: black wants it the other way
+disable=missing-module-docstring,bad-continuation

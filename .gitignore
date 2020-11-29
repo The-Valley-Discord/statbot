@@ -1,0 +1,6 @@
+.vscode
+__pycache__
+statbot.db
+settings.json
+chart.png
+result
