@@ -414,9 +414,9 @@ async def on_message(msg: discord.Message):
         },
     )
 
-    if msg.guild.get_member(msg.author.id).guild_permissions.manage_messages and (
+    if (
         msg.content.startswith("!warn ") or msg.content.startswith("!mute ")
-    ):
+    ) and msg.guild.get_member(msg.author.id).guild_permissions.manage_messages:
         await add_modlog(msg)
 
     await bot.process_commands(msg)
