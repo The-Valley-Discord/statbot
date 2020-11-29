@@ -439,7 +439,7 @@ async def add_modlog(msg: discord.Message):
     elif command == "!warn":
         modlog_type = 0
 
-    if msg.guild.get_member(user):
+    if msg.guild.get_member(int(user)):
         database.execute(
             """INSERT INTO
             modlogs(id, author, channelid, channelname, guildid, clean_content, created_at, user,
