@@ -453,6 +453,7 @@ async def add_modlog(msg: discord.Message):
                 "channelname": msg.channel.name,
                 "guildid": msg.guild.id,
                 "clean_content": msg.clean_content,
+                "created_at": msg.created_at,
                 "user": user,
                 "type": modlog_type,
             },
@@ -460,7 +461,7 @@ async def add_modlog(msg: discord.Message):
 
         num_modlogs = select(
             "SELECT COUNT(id) FROM modlogs WHERE user=:user", {"user": user}
-        )[0]
+        )[0][0]
         if num_modlogs % 5 == 0:
             logs = bot.get_channel(int(config["private_channel"]))
             await logs.send(
