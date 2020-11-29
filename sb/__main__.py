@@ -173,7 +173,7 @@ async def cat(
         look_at = [
             channel
             for channel in ctx.guild.channels
-            if selector in channel.category.name.lowercase()
+            if selector in channel.category.name.casefold()
         ]
 
     if not look_at:
