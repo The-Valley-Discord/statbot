@@ -45,7 +45,7 @@ __**Channels & Categories**__
 
 __**Users**__
 *Who has been active in these channels?*
-`sb voters <min. posts per week> <channels...>`
+`sb voters <channels...>`
 *Who has posted a phrase most frequently?*
 `sb wordcount <phrase>`
 *How many posts has someone made?*
