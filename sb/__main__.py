@@ -177,6 +177,12 @@ async def cat(
             if channel.category and selector in channel.category.name.casefold()
         ]
 
+    look_at = [
+        channel
+        for channel in look_at
+        if channel.permissions_for(ctx.author).read_messages
+    ]
+
     if not look_at:
         ctx.send(f"No channels found for '{selector}'")
         return
@@ -218,6 +224,12 @@ async def chan(
     channels = []
     reply = ""
 
+    look_at = [
+        channel
+        for channel in look_at
+        if channel.permissions_for(ctx.author).read_messages
+    ]
+
     for channel in look_at:
         row = tuple()
         if timedesc == "all":
@@ -242,10 +254,16 @@ async def chan(
 
 
 @bot.command()
-async def graph(ctx: commands.Context, channels: commands.Greedy[discord.TextChannel]):
+async def graph(ctx: commands.Context, look_at: commands.Greedy[discord.TextChannel]):
     "How active have these channels been, but as a graph?"
 
-    for channel in channels:
+    look_at = [
+        channel
+        for channel in look_at
+        if channel.permissions_for(ctx.author).read_messages
+    ]
+
+    for channel in look_at:
         postdates = []
         postcounts = []
         rows = select(
@@ -300,6 +318,12 @@ async def _voters(
         + "*1) Number of weeks in the last month where user was more active than the mean*\n"
         + "*2) Average number of posts in these weeks*\n\n"
     )
+
+    look_at = [
+        channel
+        for channel in look_at
+        if channel.permissions_for(ctx.author).read_messages
+    ]
 
     for channel in look_at:
         reply += f"{channel.mention}:\n"
@@ -375,6 +399,7 @@ async def _voters(
 
 
 @bot.command()
+@commands.has_guild_permissions(manage_messages=True)
 async def modlogs(ctx: commands.Context, users: commands.Greedy[discord.User]):
     "How many modlogs do these users have?"
 
@@ -391,6 +416,7 @@ async def modlogs(ctx: commands.Context, users: commands.Greedy[discord.User]):
 
 
 @bot.command()
+@commands.has_guild_permissions(manage_messages=True)
 async def modscoreboard(ctx: commands.Context, timedesc: str = "all"):
     "Which mod is the worst?"
     rowno = 1
