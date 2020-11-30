@@ -291,7 +291,7 @@ async def server(ctx: commands.Context, timedesc: str = "all"):
 @bot.command(name="voters")
 async def _voters(
     ctx: commands.Context,
-    look_at: commands.Greedy[int],
+    look_at: commands.Greedy[discord.TextChannel],
 ):
     "Who has been active in these channels?"
 
@@ -302,7 +302,7 @@ async def _voters(
     )
 
     for channel in look_at:
-        reply += f"<#{channel}>:\n"
+        reply += f"{channel.mention}:\n"
 
         found_users = []
 
@@ -319,7 +319,7 @@ async def _voters(
                 WHERE channelid = :channelid
                 AND created_at >= datetime("now", :veryago)
                 AND created_at <= datetime("now", :lessago)""",
-                {"channelid": channel, "veryago": veryago, "lessago": lessago},
+                {"channelid": channel.id, "veryago": veryago, "lessago": lessago},
             )[0][0]
 
             # get (user_id, post_count) for everyone "active" (above mean)
@@ -332,7 +332,7 @@ async def _voters(
                 HAVING num_messages > :average
                 ORDER BY num_messages DESC""",
                 {
-                    "channelid": channel,
+                    "channelid": channel.id,
                     "veryago": veryago,
                     "lessago": lessago,
                     "average": average,

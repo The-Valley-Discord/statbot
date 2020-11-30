@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sb"
-version = "0.3.2"
+version = "0.3.3"
 description = "Eye see you"
 authors = ["Cassidy Dingenskirchen <admin@15318.de>"]
 
