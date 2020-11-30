@@ -1,3 +1,4 @@
+import itertools
 import json
 import re
 import sqlite3
@@ -290,28 +291,83 @@ async def server(ctx: commands.Context, timedesc: str = "all"):
 @bot.command(name="voters")
 async def _voters(
     ctx: commands.Context,
-    min_count: Optional[int],
-    look_at: commands.Greedy[discord.TextChannel],
+    look_at: commands.Greedy[int],
 ):
     "Who has been active in these channels?"
 
-    if not min_count:
-        min_count = 10
-
-    reply = ""
+    reply = (
+        "*Numbers mean:*\n"
+        + "*1) Number of weeks in the last month where user was more active than the mean*\n"
+        + "*2) Average number of posts in these weeks*\n\n"
+    )
 
     for channel in look_at:
-        reply += f"{channel.name}:\n"
-        voters = select(
-            """SELECT author FROM messages
-            WHERE channelid=:channelid AND created_at >= datetime('now', :ago)
-            GROUP BY author HAVING COUNT(*) > :voters""",
-            {"channelid": channel.id, "ago": sql_time("week"), "voters": min_count},
+        reply += f"<#{channel}>:\n"
+
+        found_users = []
+
+        # for every week in the last month:
+        for veryago, lessago in (
+            ("-7 days", "-0 days"),
+            ("-14 days", "-7 days"),
+            ("-21 days", "-14 days"),
+            ("-28 days", "-21 days"),
+        ):
+            # determine average posts per user
+            average = select(
+                """SELECT count(*)/count(distinct author) FROM messages
+                WHERE channelid = :channelid
+                AND created_at >= datetime("now", :veryago)
+                AND created_at <= datetime("now", :lessago)""",
+                {"channelid": channel, "veryago": veryago, "lessago": lessago},
+            )[0][0]
+
+            # get (user_id, post_count) for everyone "active" (above mean)
+            users_in_upper_half = select(
+                """SELECT author, count(id) as num_messages FROM messages
+                WHERE channelid = :channelid
+                AND created_at >= datetime("now", :veryago)
+                AND created_at <= datetime("now", :lessago)
+                GROUP BY author
+                HAVING num_messages > :average
+                ORDER BY num_messages DESC""",
+                {
+                    "channelid": channel,
+                    "veryago": veryago,
+                    "lessago": lessago,
+                    "average": average,
+                },
+            )
+            found_users.extend(users_in_upper_half)
+
+        # found_users now contains active users for every week like this:
+        # [(user_a, count_a_1), (user_b, count_b_1), (user_b, count_b_1)]
+        # we want to group it by user, like this
+        # [(user_a, count_a_1), ((user_b, count_b_1), (user_b, count_b_1))]
+        user_weeks = []
+        by_user = lambda tup: tup[0]
+        for _, group in itertools.groupby(
+            sorted(found_users, key=by_user), key=by_user
+        ):
+            user_weeks.append(list(group))
+
+        calculate_average_per_week = lambda weeks: sum(
+            [week[1] for week in weeks]
+        ) // len(weeks)
+
+        # sort our results for presentation
+        user_weeks = sorted(
+            user_weeks,
+            key=lambda weeks: (
+                len(weeks),
+                calculate_average_per_week(weeks),  # pylint: disable=cell-var-from-loop
+            ),
+            reverse=True,
         )
-        for row in voters:
-            voter = ctx.guild.get_member(row[0])
-            if voter is not None and not is_bot(voter):
-                reply += f"{voter}\n"
+
+        for weeks in user_weeks:
+            reply += f"**{len(weeks)}, {calculate_average_per_week(weeks)}** "
+            reply += f"{bot.get_user(weeks[0][0])}\n"
 
         reply += "\n"
 
