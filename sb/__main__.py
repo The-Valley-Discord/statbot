@@ -1,10 +1,9 @@
+import itertools
 import json
 import re
 import sqlite3
 import time
 from datetime import datetime, timedelta
-import itertools
-import pprint
 from typing import List, Optional, Union
 
 import discord
@@ -296,10 +295,6 @@ async def _voters(
 ):
     "Who has been active in these channels?"
 
-    min_count = 3
-    if not min_count:
-        min_count = 10
-
     reply = (
         "*Numbers mean:*\n"
         + "*1) Number of weeks in the last month where user was more active than the mean*\n"
@@ -361,20 +356,18 @@ async def _voters(
         ) // len(weeks)
 
         # sort our results for presentation
-        sort_by_weeks_then_average = lambda weeks: (
-            len(weeks),
-            calculate_average_per_week(weeks),
-        )
         user_weeks = sorted(
             user_weeks,
-            key=sort_by_weeks_then_average,
+            key=lambda weeks: (
+                len(weeks),
+                calculate_average_per_week(weeks),  # pylint: disable=cell-var-from-loop
+            ),
             reverse=True,
         )
 
         for weeks in user_weeks:
-            post_count = calculate_average_per_week(weeks)
-            user_id = weeks[0][0]
-            reply += f"**{len(weeks)}, {post_count}** <@{user_id}>\n"
+            reply += f"**{len(weeks)}, {calculate_average_per_week(weeks)}** "
+            reply += f"{bot.get_user(weeks[0][0])}\n"
 
         reply += "\n"
 
