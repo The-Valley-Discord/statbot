@@ -407,7 +407,9 @@ async def modlogs(ctx: commands.Context, users: commands.Greedy[discord.User]):
 
     for user in users:
         row = select(
-            "SELECT COUNT(id) FROM modlogs WHERE user=:user", {"user": user.id}
+            """SELECT COUNT(id) FROM modlogs
+            WHERE user=:user AND created_at >= datetime('now', :ago)""",
+            {"user": user.id, "ago": "-6 months"},
         )[0]
 
         reply += f"{user.mention} has {row[0]} modlogs\n"
@@ -430,8 +432,9 @@ async def modscoreboard(ctx: commands.Context, timedesc: str = "all"):
     else:
         rows = select(
             """SELECT author, count(author) FROM modlogs
+            WHERE created_at >= datetime('now', :ago)
             GROUP BY author ORDER BY count(id) DESC""",
-            {},
+            {"ago": sql_time(timedesc)},
         )
 
     reply = f"Top {len(rows)} punishers: \n"
@@ -542,7 +545,9 @@ async def add_modlog(msg: discord.Message):
         )
 
         num_modlogs = select(
-            "SELECT COUNT(id) FROM modlogs WHERE user=:user", {"user": user}
+            """SELECT COUNT(id) FROM modlogs
+            WHERE user=:user AND created_at >= datetime('now', :ago)""",
+            {"user": user, "ago": "-6 months"},
         )[0][0]
         if num_modlogs % 5 == 0:
             logs = bot.get_channel(int(config["private_channel"]))
