@@ -1,3 +1,4 @@
+import collections
 import itertools
 import json
 import re
@@ -42,6 +43,8 @@ __**Channels & Categories**__
 `sb chan <day/week/month/all> <channels...>`
 *How active have these channels been, but as a graph?*
 `sb graph <channels...>`
+Which roles are most present in these channels?
+`sb roles <day/week/month/all> <channels...>`
 
 __**Users**__
 *Who has been active in these channels?*
@@ -304,6 +307,55 @@ async def server(ctx: commands.Context, timedesc: str = "all"):
             {"ago": sql_time(timedesc)},
         )[0]
     await ctx.send(f"{ctx.guild.name}: {row[0]:n} messages from {row[1]} users")
+
+
+@bot.command()
+async def roles(
+    ctx: commands.Context,
+    timedesc: str,
+    look_at: commands.Greedy[discord.TextChannel],
+):
+    "Which roles are most present in these channels?"
+
+    look_at = [
+        channel
+        for channel in look_at
+        if channel.permissions_for(ctx.author).read_messages
+    ]
+
+    for channel in look_at:
+        user_ids = []
+        if timedesc == "all":
+            user_ids = select(
+                "SELECT DISTINCT author FROM messages WHERE channelid = :channelid",
+                {"channelid": channel.id},
+            )
+        else:
+            user_ids = select(
+                """SELECT DISTINCT author FROM messages
+                    WHERE channelid = :channelid
+                    AND created_at >= datetime('now', :ago)""",
+                {"channelid": channel.id, "ago": sql_time(timedesc)},
+            )
+
+        count = collections.Counter()
+        members = [ctx.guild.get_member(i[0]) for i in user_ids]
+        members = [member for member in members if member]
+        for member in members:
+            count.update(member.roles)
+
+        await paged_send(
+            ctx,
+            "\n".join(
+                [
+                    f"{num} {r.name}"
+                    for r, num in sorted(
+                        count.items(), key=lambda tup: tup[1], reverse=True
+                    )
+                    if not r.name == "@everyone"
+                ]
+            ),
+        )
 
 
 @bot.command(name="voters")
