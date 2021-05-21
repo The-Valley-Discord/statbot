@@ -23,8 +23,7 @@ intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix="sb ", intents=intents, help_command=None)
 bot.add_check(
-    lambda ctx: ctx.author.guild_permissions.manage_messages
-    or ctx.channel.name == "bot-stuff"
+    lambda ctx: ctx.author.guild_permissions.manage_messages or ctx.channel.name == "bot-stuff"
 )
 
 
@@ -107,9 +106,7 @@ def is_bot(member: discord.Member) -> bool:
 
 
 @bot.command()
-async def postcount(
-    ctx: commands.Context, users: commands.Greedy[Union[discord.Member, int]]
-):
+async def postcount(ctx: commands.Context, users: commands.Greedy[Union[discord.Member, int]]):
     "How many posts have these users made?"
 
     reply = ""
@@ -119,9 +116,7 @@ async def postcount(
         user_id = getattr(user, "id", user)
         user_name = bot.get_user(user_id).name
 
-        count = select(
-            "SELECT count(*) FROM messages WHERE author=:uid;", {"uid": user_id}
-        )[0][0]
+        count = select("SELECT count(*) FROM messages WHERE author=:uid;", {"uid": user_id})[0][0]
 
         reply += f"{user_name} postcount: {count}\n"
 
@@ -162,9 +157,7 @@ async def wordcount(ctx: commands.Context, *, phrase: str):
 
 @bot.command()
 async def cat(
-    ctx: commands.Context,
-    timedesc: str,
-    selector: Optional[Union[discord.CategoryChannel, str]],
+    ctx: commands.Context, timedesc: str, selector: Optional[Union[discord.CategoryChannel, str]],
 ):
     "What are the most active channels in these categories?"
 
@@ -180,11 +173,7 @@ async def cat(
             if channel.category and selector in channel.category.name.casefold()
         ]
 
-    look_at = [
-        channel
-        for channel in look_at
-        if channel.permissions_for(ctx.author).read_messages
-    ]
+    look_at = [channel for channel in look_at if channel.permissions_for(ctx.author).read_messages]
 
     if not look_at:
         ctx.send(f"No channels found for '{selector}'")
@@ -218,20 +207,14 @@ async def cat(
 
 @bot.command(name="chan")
 async def chan(
-    ctx: commands.Context,
-    timedesc: str,
-    look_at: commands.Greedy[discord.TextChannel],
+    ctx: commands.Context, timedesc: str, look_at: commands.Greedy[discord.TextChannel],
 ):
     "How active have these channels been?"
 
     channels = []
     reply = ""
 
-    look_at = [
-        channel
-        for channel in look_at
-        if channel.permissions_for(ctx.author).read_messages
-    ]
+    look_at = [channel for channel in look_at if channel.permissions_for(ctx.author).read_messages]
 
     for channel in look_at:
         row = tuple()
@@ -260,11 +243,7 @@ async def chan(
 async def graph(ctx: commands.Context, look_at: commands.Greedy[discord.TextChannel]):
     "How active have these channels been, but as a graph?"
 
-    look_at = [
-        channel
-        for channel in look_at
-        if channel.permissions_for(ctx.author).read_messages
-    ]
+    look_at = [channel for channel in look_at if channel.permissions_for(ctx.author).read_messages]
 
     for channel in look_at:
         postdates = []
@@ -311,17 +290,11 @@ async def server(ctx: commands.Context, timedesc: str = "all"):
 
 @bot.command()
 async def roles(
-    ctx: commands.Context,
-    timedesc: str,
-    look_at: commands.Greedy[discord.TextChannel],
+    ctx: commands.Context, timedesc: str, look_at: commands.Greedy[discord.TextChannel],
 ):
     "Which roles are most present in these channels?"
 
-    look_at = [
-        channel
-        for channel in look_at
-        if channel.permissions_for(ctx.author).read_messages
-    ]
+    look_at = [channel for channel in look_at if channel.permissions_for(ctx.author).read_messages]
 
     for channel in look_at:
         user_ids = []
@@ -349,9 +322,7 @@ async def roles(
             "\n".join(
                 [
                     f"{num} {r.name}"
-                    for r, num in sorted(
-                        count.items(), key=lambda tup: tup[1], reverse=True
-                    )
+                    for r, num in sorted(count.items(), key=lambda tup: tup[1], reverse=True)
                     if not r.name == "@everyone"
                 ]
             ),
@@ -360,8 +331,7 @@ async def roles(
 
 @bot.command(name="voters")
 async def _voters(
-    ctx: commands.Context,
-    look_at: commands.Greedy[discord.TextChannel],
+    ctx: commands.Context, look_at: commands.Greedy[discord.TextChannel],
 ):
     "Who has been active in these channels?"
 
@@ -371,11 +341,7 @@ async def _voters(
         + "*2) Average number of posts in these weeks*\n\n"
     )
 
-    look_at = [
-        channel
-        for channel in look_at
-        if channel.permissions_for(ctx.author).read_messages
-    ]
+    look_at = [channel for channel in look_at if channel.permissions_for(ctx.author).read_messages]
 
     for channel in look_at:
         reply += f"{channel.mention}:\n"
@@ -422,14 +388,10 @@ async def _voters(
         # [(user_a, count_a_1), ((user_b, count_b_1), (user_b, count_b_1))]
         user_weeks = []
         by_user = lambda tup: tup[0]
-        for _, group in itertools.groupby(
-            sorted(found_users, key=by_user), key=by_user
-        ):
+        for _, group in itertools.groupby(sorted(found_users, key=by_user), key=by_user):
             user_weeks.append(list(group))
 
-        calculate_average_per_week = lambda weeks: sum(
-            [week[1] for week in weeks]
-        ) // len(weeks)
+        calculate_average_per_week = lambda weeks: sum([week[1] for week in weeks]) // len(weeks)
 
         # sort our results for presentation
         user_weeks = sorted(
@@ -568,12 +530,12 @@ async def on_ready():
 async def add_modlog(msg: discord.Message):
     "Check if something is a warn/mute and add it to the database if so"
 
-    command, user = re.search(r"(!mute|!warn)\s+(?:<@!?)?(\d+)", msg.content).groups()
+    command, user = re.search(r"(.mute|.warn)\s+(?:<@!?)?(\d+)", msg.content).groups()
 
     modlog_type = None
-    if command == "!mute":
+    if command == ".mute":
         modlog_type = 1
-    elif command == "!warn":
+    elif command == ".warn":
         modlog_type = 0
 
     if msg.guild.get_member(int(user)):
@@ -603,9 +565,7 @@ async def add_modlog(msg: discord.Message):
         )[0][0]
         if num_modlogs % 5 == 0:
             logs = bot.get_channel(int(config["private_channel"]))
-            await logs.send(
-                f"<@&{config['notify_role']}> <@{user}> has {num_modlogs} modlogs"
-            )
+            await logs.send(f"<@&{config['notify_role']}> <@{user}> has {num_modlogs} modlogs")
 
 
 def main():
